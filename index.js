@@ -1,25 +1,29 @@
 const redisClientFactory = require('./redisClientFactory');
 const redislock = require('redislock');
 
-let client;
-let lock;
+let clients = {};
+let locks = {};
 
-const createClient = ({ host, port, password = null, timeout, retries, delay }) => {
+const createClient = ({ name, host, port, password, timeout, retries, delay, db }) => {
 	try {
-		client = redisClientFactory.createClient(host, port, password);
-		lock = redislock.createLock(client, {
+		validateDuplicateClient(name);
+		const client = redisClientFactory.createClient(host, port, password, db);
+		clients[name] = client;
+		const lock = redislock.createLock(client, {
 			timeout,
 			retries,
 			delay
 		});
+		locks[name] = lock;
 	} catch (error) {
 		console.log('Error createClient: ', error);
 		throw error;
 	}
 };
 
-const setAsync = async (key, value, ttl = 60) => {
+const setAsync = async (clientName, key, value, ttl = 60) => {
 	try {
+		validateClientExist(clientName);
 		if (!key || key === '') {
 			throw new Error('Missing key');
 		}
@@ -28,29 +32,31 @@ const setAsync = async (key, value, ttl = 60) => {
 			throw new Error('Missing value');
 		}
 
-		await client.setAsync(key, value, ttl);
-		await client.expire(key, ttl);
+		await clients[clientName].setAsync(key, value);
+		await clients[clientName].expire(key, ttl);
 	} catch (error) {
 		console.log('Error setAsync: ', error);
 		throw error;
 	}
 };
 
-const getAsync = async key => {
+const getAsync = async (clientName, key) => {
 	try {
+		validateClientExist(clientName);
 		if (!key || key === '') {
 			throw new Error('Missing key');
 		}
 
-		return await client.getAsync(key);
+		return await clients[clientName].getAsync(key);
 	} catch (error) {
 		console.log('Error getAsync: ', error);
 		throw error;
 	}
 };
 
-const getBatchAsync = async keys => {
+const getBatchAsync = async (clientName, keys) => {
 	try {
+		validateClientExist(clientName);
 		if (keys && keys instanceof Array == false) {
 			throw new Error('Parameter keys must be an array');
 		}
@@ -59,7 +65,7 @@ const getBatchAsync = async keys => {
 			throw new Error('Array must be with at least on key');
 		}
 
-		await client.mgetAsync(keys, (err, res) => {
+		await clients[clientName].mgetAsync(keys, (err, res) => {
 			if (err) {
 				console.log('Error getBatch: ', err);
 			}
@@ -72,8 +78,9 @@ const getBatchAsync = async keys => {
 	}
 };
 
-const setBatchAsync = async keysWithValues => {
+const setBatchAsync = async (clientName, keysWithValues) => {
 	try {
+		validateClientExist(clientName);
 		if (keys && keys instanceof Array == false) {
 			throw new Error('Parameter keys must be an array');
 		}
@@ -82,7 +89,7 @@ const setBatchAsync = async keysWithValues => {
 			throw new Error('Array must be with at least on key and value');
 		}
 
-		client.msetAsync(keysWithValues, (err, result) => {
+		await clients[clientName].msetAsync(keysWithValues, (err, result) => {
 			if (err) {
 				console.log('Error setBatch: ', err);
 			}
@@ -95,30 +102,44 @@ const setBatchAsync = async keysWithValues => {
 	}
 };
 
-const aquireLockAsync = async (lockKey, callback) => {
+const aquireLockAsync = async (clientName, lockKey, callback) => {
 	try {
+		validateClientExist(clientName);
 		if (!lockKey || lockKey === '') {
 			throw new Error('Missing lock key');
 		}
-		await lock.acquire(lockKey);
+		await locks[clientName].acquire(lockKey);
 		callback();
-		await lock.release();
+		await locks[clientName].release();
 	} catch (error) {
 		console.log('Error aquireLockAsync: ', error);
 		throw error;
 	}
 };
 
-const deleteAsync = async key => {
+const deleteAsync = async (clientName, key) => {
 	try {
+		validateClientExist(clientName);
 		if (!lockKey || lockKey === '') {
 			throw new Error('Missing key');
 		}
 
-		await client.delAsync(key);
+		await clients[clientName].delAsync(key);
 	} catch (error) {
 		console.log('Error deleteAsync: ', error);
 		throw error;
+	}
+};
+
+const validateDuplicateClient = clientName => {
+	if (clients[clientName]) {
+		throw new Error('Client name is already exist');
+	}
+};
+
+const validateClientExist = clientName => {
+	if (clients.hasOwnProperty(clientName) == false) {
+		throw new Error('Client not exist');
 	}
 };
 
