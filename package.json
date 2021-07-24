@@ -1,7 +1,11 @@
 {
 	"name": "redis-provider",
 	"version": "1.0.5",
-	"description": "",
+	"description": "Provides simple redis usage",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/guylev008/redis-provider"
+	},
 	"main": "index.js",
 	"scripts": {
 		"test": "mocha"
