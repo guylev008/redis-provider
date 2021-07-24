@@ -4,8 +4,8 @@ const { promisifyAll } = require('bluebird');
 promisifyAll(redis);
 
 const createClient = (host, port, password, db) => {
-	if (db == null || db < 0) {
-		throw new Error('Db must be greater than -1');
+	if (db == null || (db < 0 && db > 15)) {
+		throw new Error('Db must be greater than -1 and feawer than 15');
 	}
 
 	const client = redis.createClient({

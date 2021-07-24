@@ -2,14 +2,14 @@ const index = require('../index');
 
 const clientName = 'test';
 const config = {
-	name: clientName,
+	clientName: clientName,
 	host: 'localhost',
 	port: 6379,
 	password: '',
 	timeout: 90000,
 	retries: 10,
 	delay: 100,
-	db: 0
+	dbNumber: 0
 };
 
 describe('redis test', () => {

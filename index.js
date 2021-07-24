@@ -4,17 +4,17 @@ const redislock = require('redislock');
 let clients = {};
 let locks = {};
 
-const createClient = ({ name, host, port, password, timeout, retries, delay, db }) => {
+const createClient = ({ clientName, host, port, password, timeout, retries, delay, dbNumber }) => {
 	try {
-		validateDuplicateClient(name);
-		const client = redisClientFactory.createClient(host, port, password, db);
-		clients[name] = client;
+		validateDuplicateClient(clientName);
+		const client = redisClientFactory.createClient(host, port, password, dbNumber);
+		clients[clientName] = client;
 		const lock = redislock.createLock(client, {
 			timeout,
 			retries,
 			delay
 		});
-		locks[name] = lock;
+		locks[clientName] = lock;
 	} catch (error) {
 		console.log('Error createClient: ', error);
 		throw error;
