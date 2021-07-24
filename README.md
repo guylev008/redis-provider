@@ -14,20 +14,19 @@ $ npm i redis-provider
 const redisProvider = require('redis-provider');
 
 const config = {
-			host: 'localhost',
-			port: 6379,
-			password: null,
-			timeout: 90000,
-			retries: 10,
-			delay: 100
-		};
+	host: 'localhost',
+	port: 6379,
+	password: null,
+	timeout: 90000,
+	retries: 10,
+	delay: 100
+};
 
-redisProvider.createClient(config)
+redisProvider.createClient(config);
 
 const setKey = async () => {
-			await redisProvider.setAsync('key', 'value');
-		};
+	await redisProvider.setAsync('key', 'value');
+};
 
-		await redisProvider.aquireLockAsync('lock:key', setKey);
-
+await redisProvider.aquireLockAsync('lock:key', setKey);
 ```
