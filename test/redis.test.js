@@ -1,7 +1,7 @@
 const index = require('../index');
 
 describe('redis test', () => {
-	it('should set key', async () => {
+	it.only('should set key', async () => {
 		const config = {
 			host: 'localhost',
 			port: 6379,
